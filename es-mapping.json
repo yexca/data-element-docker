@@ -1,0 +1,73 @@
+{
+  "mappings": {
+    "properties": {
+      "dataId": {
+        "type": "long",
+        "index": false
+      },
+
+      "userId": {
+        "type": "long",
+        "index": false
+      },
+
+      "username": {
+        "type": "text",
+        "copy_to": "all"
+      },
+
+      "userRole": {
+        "type": "integer",
+        "index": "false"
+      },
+
+      "name": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "copy_to": "all"
+      },
+
+      "description": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "copy_to": "all"
+      },
+
+      "categoryId": {
+        "type": "long",
+        "index": false
+      },
+
+      "categoryName": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "copy_to": "all"
+      },
+
+      "sampleFileLink": {
+        "type": "text",
+        "index": false
+      },
+
+      "fileLink": {
+        "type": "text",
+        "index": false
+      },
+
+      "createTime": {
+        "type": "date",
+        "index": false
+      },
+
+      "updateTime": {
+        "type": "date",
+        "index": false
+      },
+
+      "all": {
+        "type": "text",
+        "analyzer": "ik_max_word"
+      }
+    }
+  }
+}

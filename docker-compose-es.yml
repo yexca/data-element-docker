@@ -3,6 +3,7 @@ version: '3.0'
 services:
   mysql:
     image: mysql:5.7
+    container_name: data-sql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_DATABASE: 'dataelementai'
@@ -13,25 +14,42 @@ services:
       - mysql-data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: always
+    # ports:
+    #   - 3306:3306
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   es:
-    image: elasticsearch:7.12.1
+    image: davyinsa/elasticsearch-ik:7.12.1
+    container_name: data-es
     environment:
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - discovery.type=single-node
     volumes:
       - es-data:/usr/share/elasticsearch/data
-      - ./plugins:/usr/share/elasticsearch/plugins
+      # - ./plugins:/usr/share/elasticsearch/plugins
     privileged: true
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     # ports:
     #   - 9200:9200
     #   - 9300:9300
 
   backend:
-    image: yexca/data-element:v1.1
+    image: yexca/data-element:v1.3
+    container_name: data-backend
     depends_on:
-      - mysql
-      - es
+      mysql:
+        condition: service_healthy
+      es:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     #   SPRING_DATASOURCE_URL: jdbc:mysql://mysql/mydatabase?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
@@ -40,10 +58,11 @@ services:
     restart: always
 
   frontend:
-    image: yexca/data-vue:v1.1
+    image: yexca/data-vue:v1.2
+    container_name: data-frontend
     environment:
       - VUE_APP_BASE_URL=/api
-      - VUE_APP_URL=http://backend:8952
+      - VUE_APP_URL=http://backend:9852
     ports:
       - "8999:80"
     restart: always
