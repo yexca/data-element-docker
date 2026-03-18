@@ -6,28 +6,16 @@ This repository serves as the DevOps hub, providing orchestration for the fronte
 
 ## 🔗 Related Repositories
 
-* **Frontend:** [data-element-frontend](https://github.com/yexca/data-element-frontend)
-* **Backend:** [data-element-backend](https://github.com/yexca/data-element-backend)
-
-## 📂 Deployment Strategies
-
-To address performance bottlenecks and resource constraints, this system supports two deployment architectures.
-
-| Feature | **Mode A: Standalone (Legacy)** | **Mode B: Distributed (Recommended)** |
-| :--- | :--- | :--- |
-| **Config File** | `docker-compose-es.yml` | `docker-compose.yml` |
-| **App Version** | `v1.1` | `v1.2` (Latest) |
-| **Elasticsearch** | **Runs inside Docker** (Local) | **External Server** (Remote) |
-| **Use Case** | Demo / Testing on powerful machines | Production / Cloud Deployment / Low-spec servers |
-| **Memory Req** | > 4GB RAM | < 1GB RAM |
+* **Frontend:** [yexca/data-element-frontend](https://github.com/yexca/data-element-frontend)
+* **Backend:** [yexca/data-element-backend](https://github.com/yexca/data-element-backend)
 
 ## 🛠 Directory Structure
 
 ```text
 .
-├── 📂 plugins/ik/              # IK Analyzer (Chinese Segmentation) for Local ES
-├── 🐳 docker-compose-es.yml    # [Mode A] Full Stack including Elasticsearch (v1.1)
-├── 🐳 docker-compose.yml       # [Mode B] Lightweight App + MySQL (v1.2)
+├── 📂 plugins/ik/              # (legacy) IK Analyzer (Chinese Segmentation) for Local ES
+├── 🐳 docker-compose.yml       # Main Docker Compose orchestration file
+├── 📄 es-mapping.json          # (legacy) elasticsearch mapping structure
 ├── 📄 init.sql                 # Database initialization script (Schema & Data)
 └── 📄 Readme.md                # This file
 ```
@@ -36,40 +24,57 @@ To address performance bottlenecks and resource constraints, this system support
 
 ### Prerequisites
 
-### Prerequisites
-
 - Docker & Docker Compose
 - **Port Availability:** Port `8999` (Web Portal).
   - *Note: The Backend API port is NOT exposed to the host for security reasons.*
-- **Dependencies:**
+- **Dependencies (optional):**
   - A running Blockchain instance (Fisco Bcos).
-  - (For Mode B) A running external Elasticsearch instance.
 
 ------
 
-### Option 1: Distributed Deployment (Recommended)
+### Build backend image
 
-**Use this for the latest version (v1.2).** This mode runs the application and database locally but expects Elasticsearch to be running on an external server (configured via `data.elastic-search.server`).
+For security reasons, please build backend the backend image yourself
 
-```Bash
-# Start MySQL and App (v1.2)
-docker-compose up -d
+**1. Clone the repository:**
+
+```bash
+git clone https://github.com/yexca/data-element-backend.git
+cd data-element-backend
 ```
 
-> **Note:** Ensure your external Elasticsearch server is accessible and the backend configuration points to the correct IP.
+**2. Configure the application:**
 
-------
+Update `data-server/src/main/resources/application.yml` (and `application-prod.yml`) with your own infrastructure settings:
 
-### Option 2: Standalone Deployment (Full Stack)
+- S3-compatible Object Storage credentials
+- (Optional) Enable Fisco Bcos blockchain support and place the related files (abi, bin, conf) into `data-server/src/main/resources`
 
-**Use this for a self-contained demo (v1.1).** This mode spins up the entire stack, including a local Elasticsearch container with IK Analyzer mounted.
+**3. Build image:**
 
-```Bash
-# Start MySQL, Local ES, and App (v1.1)
-docker-compose -f docker-compose-es.yml up -d
+```bash
+docker build -t yexca/data-element:v1.3 .
 ```
 
-> **Warning:** Elasticsearch requires significant memory. If the container exits with code 137, please increase your Docker memory limit.
+### Run with docker compose
+
+**1. Clone this deployment repository:**
+
+```bash
+git clone https://github.com/yexca/data-element-docker.git
+cd data-element-docker
+```
+
+**2. Start the services:**
+
+```bash
+docker compose up -d
+```
+
+**3. Access the system:**
+
+- Web Portal: `http://localhost:8999`
+- Admin Dashboard: `http://localhost:8999/admin`
 
 ## ⚙️ Configuration Details
 
@@ -89,19 +94,7 @@ The `init.sql` script is mounted to `/docker-entrypoint-initdb.d/` in the MySQL 
 2. Import initial tables for User, Role, and Data Products.
 3. Set up default accounts.
 
-### Elasticsearch Plugins (Mode A only)
-
-The `docker-compose-es.yml` configuration mounts the local `./plugins` directory to the Elasticsearch container:
-
-```YAML
-volumes:
-  - ./plugins:/usr/share/elasticsearch/plugins
-```
-
-This ensures the **IK Analyzer** (smart Chinese tokenization) is loaded without needing to rebuild the ES image.
-
 ## ❓ Troubleshooting
 
-**Q: I cannot access the backend API at localhost:8080?** A: This is intentional. Please access the API through the frontend proxy at `http://localhost:8999/api`.
-
-**Q: Elasticsearch exits with code 137 (OOM)?** A: Check your Docker memory settings. Elasticsearch requires at least 2GB of dedicated RAM.
+**Q: Elasticsearch exits with code 137 (OOM)?**  
+A: Check your Docker memory settings. Elasticsearch requires at least 2GB of dedicated RAM.
